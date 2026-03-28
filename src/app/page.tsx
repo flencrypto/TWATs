@@ -16,7 +16,8 @@ import {
   CheckCircle,
   UserPlus,
 } from 'lucide-react'
-import { DEMO_STATS, DEMO_ACTIVITIES, DEMO_JOBS } from '@/lib/demo-data'
+import { useAppData } from '@/lib/data-context'
+import { DEMO_STATS, DEMO_ACTIVITIES } from '@/lib/demo-data'
 import { formatCurrency, formatDateTime, getStatusColor } from '@/lib/utils'
 import Link from 'next/link'
 
@@ -29,8 +30,9 @@ const iconMap: Record<string, React.ComponentType<{ className?: string }>> = {
 }
 
 export default function DashboardPage() {
+  const { jobs } = useAppData()
   const stats = DEMO_STATS
-  const todayJobs = DEMO_JOBS.filter(j => j.status === 'in_progress' || j.status === 'scheduled').slice(0, 3)
+  const todayJobs = jobs.filter(j => j.status === 'in_progress' || j.status === 'scheduled').slice(0, 3)
 
   return (
     <AppShell>

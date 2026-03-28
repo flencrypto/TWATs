@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useSession, signIn, signOut } from 'next-auth/react'
 import { AppShell } from '@/components/layout/AppShell'
 import { TopBar } from '@/components/layout/TopBar'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,9 +10,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
-import { User, Building, Bell, Shield, Palette, ChevronRight } from 'lucide-react'
+import { User, Building, Bell, Shield, Cloud, LogOut } from 'lucide-react'
 
 export default function SettingsPage() {
+  const { data: session } = useSession()
   const [fullName, setFullName] = useState('John Davies')
   const [email, setEmail] = useState('john.davies@sparky.co.uk')
   const [trade, setTrade] = useState('electrical')
@@ -133,6 +135,45 @@ export default function SettingsPage() {
                 </div>
               </div>
             ))}
+          </CardContent>
+        </Card>
+
+        {/* Google Account */}
+        <Card className="border-[#2a2a2a]">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <Cloud className="w-4 h-4 text-green-400" />
+              Google Account &amp; Data Sync
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {session ? (
+              <>
+                <div className="p-3 bg-green-500/10 border border-green-500/20 rounded-lg text-sm text-green-400">
+                  Connected as <span className="font-medium">{session.user?.email}</span>
+                </div>
+                <p className="text-xs text-[#71717a]">
+                  Your data is synced to your Google Drive (TWATS Data folder). Gmail is available to send invoices and quotes.
+                </p>
+                <Button
+                  variant="outline"
+                  className="text-red-400 border-red-500/30 hover:bg-red-500/10"
+                  onClick={() => signOut()}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Sign out of Google
+                </Button>
+              </>
+            ) : (
+              <>
+                <p className="text-xs text-[#71717a]">
+                  Sign in with Google to sync your data to Drive and send emails via Gmail.
+                </p>
+                <Button onClick={() => signIn('google', { callbackUrl: '/settings' })}>
+                  Connect Google Account
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
 

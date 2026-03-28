@@ -7,13 +7,12 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Plus, Search, Mail, Phone, MapPin, Briefcase } from 'lucide-react'
-import { DEMO_CLIENTS } from '@/lib/demo-data'
+import { useAppData } from '@/lib/data-context'
 import { formatCurrency } from '@/lib/utils'
-import type { Client } from '@/types'
 
 export default function ClientsPage() {
+  const { clients } = useAppData()
   const [search, setSearch] = useState('')
-  const [clients] = useState<Client[]>(DEMO_CLIENTS)
 
   const filtered = clients.filter(c =>
     c.name.toLowerCase().includes(search.toLowerCase()) ||

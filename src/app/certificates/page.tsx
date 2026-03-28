@@ -8,9 +8,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Plus, Search, Award, Bot, Calendar, ChevronRight } from 'lucide-react'
-import { DEMO_CERTIFICATES } from '@/lib/demo-data'
+import { useAppData } from '@/lib/data-context'
 import { formatDate, getStatusColor } from '@/lib/utils'
-import type { Certificate } from '@/types'
 
 const CERT_LABELS: Record<string, string> = {
   EIC: 'Electrical Installation Certificate',
@@ -22,11 +21,11 @@ const CERT_LABELS: Record<string, string> = {
 }
 
 export default function CertificatesPage() {
+  const { certificates } = useAppData()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [certs] = useState<Certificate[]>(DEMO_CERTIFICATES)
 
-  const filtered = certs.filter(c => {
+  const filtered = certificates.filter(c => {
     const matchSearch =
       (c.cert_number || '').toLowerCase().includes(search.toLowerCase()) ||
       c.client_name.toLowerCase().includes(search.toLowerCase()) ||
@@ -37,7 +36,7 @@ export default function CertificatesPage() {
 
   return (
     <AppShell>
-      <TopBar title="Certificates" subtitle={`${certs.length} certificates`} />
+      <TopBar title="Certificates" subtitle={`${certificates.length} certificates`} />
       <div className="p-6 space-y-4">
         {/* AI note banner */}
         <div className="flex items-start gap-3 p-4 bg-[#0ea5e9]/10 border border-[#0ea5e9]/20 rounded-xl">

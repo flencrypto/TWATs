@@ -8,14 +8,13 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select } from '@/components/ui/select'
 import { Plus, Search, MapPin, Clock, ChevronRight } from 'lucide-react'
-import { DEMO_JOBS } from '@/lib/demo-data'
+import { useAppData } from '@/lib/data-context'
 import { getStatusColor, getPriorityColor } from '@/lib/utils'
-import type { Job, JobStatus } from '@/types'
 
 export default function JobsPage() {
+  const { jobs } = useAppData()
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
-  const [jobs] = useState<Job[]>(DEMO_JOBS)
 
   const filtered = jobs.filter(j => {
     const matchSearch = j.title.toLowerCase().includes(search.toLowerCase()) ||
