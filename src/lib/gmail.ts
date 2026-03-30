@@ -1,11 +1,22 @@
 import { google } from 'googleapis'
 
-function getGmailClient(accessToken: string) {
+type GmailClient = ReturnType<typeof google.gmail>
+
+function getGmailClient(
+  accessToken: string,
+  refreshToken?: string,
+  expiryDate?: number
+): GmailClient {
   const auth = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET
   )
-  auth.setCredentials({ access_token: accessToken })
+  const credentials: { access_token: string; refresh_token?: string; expiry_date?: number } = {
+    access_token: accessToken,
+  }
+  if (refreshToken) credentials.refresh_token = refreshToken
+  if (typeof expiryDate === 'number') credentials.expiry_date = expiryDate
+  auth.setCredentials(credentials)
   return google.gmail({ version: 'v1', auth })
 }
 
@@ -36,9 +47,12 @@ export async function sendEmail(
   accessToken: string,
   to: string,
   subject: string,
-  html: string
+  html: string,
+  refreshToken?: string,
+  expiresAt?: number
 ): Promise<void> {
-  const gmail = getGmailClient(accessToken)
+  const expiryDate = typeof expiresAt === 'number' ? expiresAt * 1000 : undefined
+  const gmail = getGmailClient(accessToken, refreshToken, expiryDate)
   const raw = makeRawEmail(to, subject, html)
   await gmail.users.messages.send({ userId: 'me', requestBody: { raw } })
 }

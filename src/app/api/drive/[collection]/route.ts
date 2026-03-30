@@ -21,7 +21,12 @@ export async function GET(
   }
 
   try {
-    const data = await readCollection(token.accessToken as string, collection)
+    const data = await readCollection(
+      token.accessToken as string,
+      collection,
+      token.refreshToken as string | undefined,
+      token.expiresAt as number | undefined
+    )
     return NextResponse.json(data)
   } catch (err) {
     console.error(`Drive read error [${collection}]:`, err)
@@ -43,17 +48,45 @@ export async function POST(
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const contentLength = Number(req.headers.get('content-length') ?? 0)
-  if (contentLength > MAX_PAYLOAD_BYTES) {
+  const contentLengthHeader = req.headers.get('content-length')
+  if (contentLengthHeader !== null) {
+    const contentLength = Number(contentLengthHeader)
+    if (!Number.isNaN(contentLength) && contentLength > MAX_PAYLOAD_BYTES) {
+      return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
+    }
+  }
+
+  let rawBody: string
+  try {
+    rawBody = await req.text()
+  } catch (err) {
+    console.error(`Drive write - failed to read request body [${collection}]:`, err)
+    return NextResponse.json({ error: 'Failed to read request body' }, { status: 500 })
+  }
+
+  if (Buffer.byteLength(rawBody, 'utf8') > MAX_PAYLOAD_BYTES) {
     return NextResponse.json({ error: 'Payload too large' }, { status: 413 })
   }
 
+  let body: unknown
   try {
-    const body: unknown = await req.json()
-    if (!Array.isArray(body)) {
-      return NextResponse.json({ error: 'Request body must be an array' }, { status: 400 })
-    }
-    await writeCollection(token.accessToken as string, collection, body)
+    body = JSON.parse(rawBody)
+  } catch {
+    return NextResponse.json({ error: 'Invalid JSON payload' }, { status: 400 })
+  }
+
+  if (!Array.isArray(body)) {
+    return NextResponse.json({ error: 'Request body must be an array' }, { status: 400 })
+  }
+
+  try {
+    await writeCollection(
+      token.accessToken as string,
+      collection,
+      body,
+      token.refreshToken as string | undefined,
+      token.expiresAt as number | undefined
+    )
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error(`Drive write error [${collection}]:`, err)

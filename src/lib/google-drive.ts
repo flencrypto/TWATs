@@ -3,24 +3,33 @@ import { google } from 'googleapis'
 const APP_FOLDER_NAME = 'TWATS Data'
 const VALID_COLLECTIONS = new Set(['clients', 'jobs', 'quotes', 'invoices', 'certificates'])
 
+type DriveClient = ReturnType<typeof google.drive>
+
 function assertValidCollection(collection: string): void {
   if (!VALID_COLLECTIONS.has(collection)) {
     throw new Error(`Invalid collection: ${collection}`)
   }
 }
 
-function getDriveClient(accessToken: string) {
+function getDriveClient(
+  accessToken: string,
+  refreshToken?: string,
+  expiryDate?: number
+): DriveClient {
   const auth = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET
   )
-  auth.setCredentials({ access_token: accessToken })
+  const credentials: { access_token: string; refresh_token?: string; expiry_date?: number } = {
+    access_token: accessToken,
+  }
+  if (refreshToken) credentials.refresh_token = refreshToken
+  if (typeof expiryDate === 'number') credentials.expiry_date = expiryDate
+  auth.setCredentials(credentials)
   return google.drive({ version: 'v3', auth })
 }
 
-export async function getOrCreateAppFolder(accessToken: string): Promise<string> {
-  const drive = getDriveClient(accessToken)
-
+async function getOrCreateAppFolder(drive: DriveClient): Promise<string> {
   const res = await drive.files.list({
     q: `name='${APP_FOLDER_NAME.replace(/'/g, "\\'")}' and mimeType='application/vnd.google-apps.folder' and trashed=false`,
     fields: 'files(id)',
@@ -42,10 +51,16 @@ export async function getOrCreateAppFolder(accessToken: string): Promise<string>
   return folder.data.id!
 }
 
-export async function readCollection<T>(accessToken: string, collection: string): Promise<T[]> {
+export async function readCollection<T>(
+  accessToken: string,
+  collection: string,
+  refreshToken?: string,
+  expiresAt?: number
+): Promise<T[]> {
   assertValidCollection(collection)
-  const drive = getDriveClient(accessToken)
-  const folderId = await getOrCreateAppFolder(accessToken)
+  const expiryDate = typeof expiresAt === 'number' ? expiresAt * 1000 : undefined
+  const drive = getDriveClient(accessToken, refreshToken, expiryDate)
+  const folderId = await getOrCreateAppFolder(drive)
 
   const res = await drive.files.list({
     q: `name='${collection}.json' and '${folderId}' in parents and trashed=false`,
@@ -72,11 +87,14 @@ export async function readCollection<T>(accessToken: string, collection: string)
 export async function writeCollection<T>(
   accessToken: string,
   collection: string,
-  data: T[]
+  data: T[],
+  refreshToken?: string,
+  expiresAt?: number
 ): Promise<void> {
   assertValidCollection(collection)
-  const drive = getDriveClient(accessToken)
-  const folderId = await getOrCreateAppFolder(accessToken)
+  const expiryDate = typeof expiresAt === 'number' ? expiresAt * 1000 : undefined
+  const drive = getDriveClient(accessToken, refreshToken, expiryDate)
+  const folderId = await getOrCreateAppFolder(drive)
 
   const res = await drive.files.list({
     q: `name='${collection}.json' and '${folderId}' in parents and trashed=false`,

@@ -38,11 +38,14 @@ async function fetchCollection<T>(collection: string): Promise<T[]> {
 }
 
 async function saveCollection<T>(collection: string, data: T[]): Promise<void> {
-  await fetch(`/api/drive/${collection}`, {
+  const res = await fetch(`/api/drive/${collection}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
+  if (!res.ok) {
+    throw new Error(`HTTP ${res.status} saving collection '${collection}'`)
+  }
 }
 
 export function AppDataProvider({ children }: { children: React.ReactNode }) {

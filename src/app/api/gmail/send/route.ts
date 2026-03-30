@@ -15,10 +15,22 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  const body = await req.json() as {
+  let body: {
     to: unknown
     subject: unknown
     html: unknown
+  }
+  try {
+    body = await req.json() as {
+      to: unknown
+      subject: unknown
+      html: unknown
+    }
+  } catch (err) {
+    if (err instanceof SyntaxError) {
+      return NextResponse.json({ error: 'Invalid JSON body' }, { status: 400 })
+    }
+    throw err
   }
 
   const { to, subject, html } = body
@@ -51,7 +63,14 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    await sendEmail(token.accessToken as string, trimmedTo, trimmedSubject, html)
+    await sendEmail(
+      token.accessToken as string,
+      trimmedTo,
+      trimmedSubject,
+      html,
+      token.refreshToken as string | undefined,
+      token.expiresAt as number | undefined
+    )
     return NextResponse.json({ ok: true })
   } catch (err) {
     console.error('Gmail send error:', err)
